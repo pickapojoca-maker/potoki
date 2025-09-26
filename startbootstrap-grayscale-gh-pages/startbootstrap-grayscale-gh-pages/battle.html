@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="sl">
 <head>
   <meta charset="utf-8">
@@ -56,15 +56,9 @@
         <figcaption id="heroCap" class="text-muted small mt-2"></figcaption>
       </figure>
 
-      <!-- Krajša verzija iz .txt -->
-      <section class="mb-4">
-        <h5>KRAJŠA VERZIJA</h5>
-        <div id="short">—</div>
-      </section>
-
       <hr class="my-4 sep">
 
-      <!-- Celoten opis iz .txt -->
+      <!-- SAMO CELOTEN OPIS iz .txt -->
       <section>
         <h5>CELOTEN OPIS</h5>
         <div id="full">—</div>
@@ -90,7 +84,7 @@
       "francosko-pruska-vojna": { title:"Francosko-pruska vojna – Gravelotte/St. Privat", place:"Metz, Francija", date:"16.–18. avg. 1870" }
     };
 
-    // ====== Povezava na .txt vire (v assets/text/) ======
+    // ====== Povezava na .txt vire ======
     const FILES = {
       "sevastopol": "Sevastopol.txt",
       "sedan": "Sedan.txt",
@@ -107,7 +101,7 @@
       "francosko-pruska-vojna": "Francosko pruska vojna.txt"
     };
 
-    // ====== Slike za posamezne podstrani (v assets/img/art/) ======
+    // ====== Slike (v assets/img/art/) ======
     const IMAGES = {
       "aneksija-bih": "Aneksija v BIH.png",
       "balkanski-vojni": "Balkanska vojna.png",
@@ -132,46 +126,50 @@
         ? '<p>' + parts.map(p => p.replace(/\n+/g,'<br>')).join('</p><p>') + '</p>'
         : '<p>' + clean.replace(/\n+/g,'<br>') + '</p>';
     }
-    function parseSections(raw) {
+    function parseFullOnly(raw) {
+      // če .txt vsebuje sekcije, vzemi del za "VSE"; sicer celoten tekst
       const t = raw.replace(/\r/g,'');
-      const mShort = /(^|\n)\s*KRAJŠA\s+VERZIJA\s*\n/i;
-      const mFull  = /(^|\n)\s*VSE\s*\n/i;
-      const a = mShort.exec(t), b = mFull.exec(t);
-      if (a && b) {
-        const short = t.slice(a.index + a[0].length, b.index).trim();
-        const full  = t.slice(b.index + b[0].length).trim();
-        return { short: textToHtmlParagraphs(short), full: textToHtmlParagraphs(full) };
+      const mFull = /(^|\n)\s*VSE\s*\n/i;
+      if (mFull) {
+        const idx = t.search(mFull);
+        if (idx !== -1) {
+          const full = t.slice(idx + t.match(mFull)[0].length).trim();
+          if (full) return textToHtmlParagraphs(full);
+        }
       }
-      const trimmed = t.trim();
-      return {
-        short: '<p>' + (trimmed.slice(0,400) + (trimmed.length>400?'…':'' )).replace(/\n+/g,'<br>') + '</p>',
-        full:  textToHtmlParagraphs(trimmed)
-      };
+      return textToHtmlParagraphs(t.trim());
     }
     async function loadTextFile(path) {
-      const p1 = 'assets/text/' + encodeURIComponent(path);
-      try { const r1 = await fetch(p1); if (r1.ok) return await r1.text(); } catch(e) {}
-      const p2 = 'assets/text/' + asciiFallback(path);
-      try { const r2 = await fetch(p2); if (r2.ok) return await r2.text(); } catch(e) {}
-      throw new Error('Ni mogoče naložiti: ' + p1 + ' ali ' + p2);
+      // poskusi absolutno in relativno mapo + šumniki/fallback
+      const bases = ['/assets/text/', 'assets/text/'];
+      const tries = [];
+      for (const base of bases) {
+        const p1 = base + encodeURIComponent(path);
+        const p2 = base + asciiFallback(path);
+        tries.push(p1, p2);
+      }
+      for (const url of tries) {
+        try {
+          const r = await fetch(url);
+          if (r.ok) return await r.text();
+        } catch(e) {}
+      }
+      throw new Error('Ni mogoče naložiti besedila iz: ' + tries.join(' | '));
     }
 
     // ====== Robustno nalaganje slik (preizkusi več možnih imen/končnic) ======
     function fileBaseCandidates(id, metaTitle, declaredName) {
       const list = [];
-      if (declaredName) list.push(declaredName); // ime iz IMAGES
-
+      if (declaredName) list.push(declaredName); // iz IMAGES
       if (metaTitle) {
         const t = metaTitle.replace(/[^\p{L}\p{N}\s.-]/gu, '').trim();
         list.push(`${t}.png`, `${t}.jpg`, `${t}.jpeg`, `${t}.webp`);
         const tAscii = asciiFallback(t);
         list.push(`${tAscii}.png`, `${tAscii}.jpg`, `${tAscii}.jpeg`, `${tAscii}.webp`);
       }
-
       list.push(`${id}.png`, `${id}.jpg`, `${id}.jpeg`, `${id}.webp`);
       const idAscii = asciiFallback(id);
       list.push(`${idAscii}.png`, `${idAscii}.jpg`, `${idAscii}.jpeg`, `${idAscii}.webp`);
-
       const extra = [];
       for (const n of [...list]) {
         if (n.includes(' ')) {
@@ -189,12 +187,14 @@
 
       const declared = IMAGES[id];
       const candidates = fileBaseCandidates(id, meta?.title, declared);
-      const folder = 'assets/img/art/';
+      const folders = ['/assets/img/art/', 'assets/img/art/']; // absolutno + relativno
 
       const urls = [];
-      for (const base of candidates) {
-        urls.push(folder + base);                     // npr. "Aneksija v BIH.png"
-        urls.push(folder + encodeURIComponent(base)); // npr. "Aneksija%20v%20BIH.png"
+      for (const folder of folders) {
+        for (const base of candidates) {
+          urls.push(folder + base);
+          urls.push(folder + encodeURIComponent(base));
+        }
       }
 
       let tried = [];
@@ -206,7 +206,7 @@
           img.remove();
           fig.innerHTML = `
             <div class="alert alert-warning text-start" role="alert">
-              Slike ni mogoče naložiti. Preveri imena datotek v <code>assets/img/art/</code>.<br>
+              Slike ni mogoče naložiti. Preveri imena datotek v <code>/assets/img/art/</code>.<br>
               <small>Poskusil sem:<br>${tried.map(u => `<code>${u}</code>`).join('<br>')}</small>
             </div>`;
           console.warn('Image candidates tried:', tried);
@@ -247,30 +247,22 @@
       // slika (če obstaja) – robustno nalaganje
       showImageFor(id, meta);
 
-      // besedilo
+      // besedilo (samo CELOTEN OPIS)
       const filename = FILES[id];
       if (!filename) {
-        $('short').innerHTML = '<p>Za ta ID ni povezane izvorne datoteke.</p>';
-        $('full').innerHTML  = '<p>Za ta ID ni povezane izvorne datoteke.</p>';
+        $('full').innerHTML = '<p>Za ta ID ni povezane izvorne datoteke.</p>';
         return;
       }
 
       try {
         const raw = await loadTextFile(filename);
-        const { short, full } = parseSections(raw);
-        $('short').innerHTML = short;
-        $('full').innerHTML  = full;
+        $('full').innerHTML = parseFullOnly(raw);
       } catch (err) {
         console.error(err);
-        const p1 = 'assets/text/' + encodeURIComponent(filename);
-        const p2 = 'assets/text/' + asciiFallback(filename);
         const hint = location.protocol === 'file:'
           ? '<p><b>Namig:</b> Če stran odpreš z dvojnim klikom (<code>file://</code>), brskalnik blokira branje datotek. Zaženi mini strežnik, npr.: <code>python -m http.server</code>, nato odpri <code>http://localhost:8000/battle.html?id='+ (id||'') +'</code>.</p>'
           : '';
-        const link1 = `<a href="${p1}" target="_blank" rel="noopener">odpri datoteko</a>`;
-        const link2 = (p1!==p2) ? ` ali ${`<a href="${p2}" target="_blank" rel="noopener">fallback ime</a>`}` : '';
-        $('short').innerHTML = '<p>Ni mogoče naložiti KRAJŠE VERZIJE.</p>' + hint + `<p>Preizkus: ${link1}${link2}.</p>`;
-        $('full').innerHTML  = '<p>Ni mogoče naložiti CELOTNEGA BESEDILA.</p>' + hint + `<p>Preizkus: ${link1}${link2}.</p>`;
+        $('full').innerHTML  = '<p>Ni mogoče naložiti besedila.</p>' + hint;
       }
     })();
   </script>
