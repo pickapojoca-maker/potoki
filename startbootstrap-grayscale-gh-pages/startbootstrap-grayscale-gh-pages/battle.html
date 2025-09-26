@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="sl">
 <head>
   <meta charset="utf-8">
@@ -30,8 +30,6 @@
     .pill { background:#2b3035; color:#ced4da; border-radius: 999px; padding:2px 10px; font-size:12px; }
     .lead-muted { color:#6c757d; }
     .sep { border-top:1px dashed #e7dcc7; opacity:.8; }
-
-    /* Slika na vrhu */
     #hero img { max-height: 520px; object-fit: contain; background:#f8f9fa; }
   </style>
 </head>
@@ -58,16 +56,15 @@
 
       <hr class="my-4 sep">
 
-      <!-- SAMO CELOTEN OPIS iz .txt -->
+      <!-- SAMO DALJŠI OPIS iz .txt (brez naslova) -->
       <section>
-        <h5>CELOTEN OPIS</h5>
         <div id="full">—</div>
       </section>
     </div>
   </main>
 
   <script>
-    // ====== META podatki za glavo (naslov/kraj/čas) ======
+    // ====== META podatki ======
     const META = {
       "sevastopol": { title:"Obleganje Sevastopola (Krimska vojna)", place:"Sevastopol, Krim", date:"1854–1855" },
       "sedan": { title:"Bitka pri Sedanu (francosko-pruska vojna)", place:"Sedan, Francija", date:"1870" },
@@ -84,7 +81,7 @@
       "francosko-pruska-vojna": { title:"Francosko-pruska vojna – Gravelotte/St. Privat", place:"Metz, Francija", date:"16.–18. avg. 1870" }
     };
 
-    // ====== Povezava na .txt vire ======
+    // ====== Povezave na .txt ======
     const FILES = {
       "sevastopol": "Sevastopol.txt",
       "sedan": "Sedan.txt",
@@ -101,7 +98,7 @@
       "francosko-pruska-vojna": "Francosko pruska vojna.txt"
     };
 
-    // ====== Slike (v assets/img/art/) ======
+    // ====== Slike (assets/img/art/) ======
     const IMAGES = {
       "aneksija-bih": "Aneksija v BIH.png",
       "balkanski-vojni": "Balkanska vojna.png",
@@ -115,79 +112,62 @@
       "rusko-japonska-vojna": "Rusko japonska vojna.png"
     };
 
-    // ====== Pomožne funkcije ======
-    function asciiFallback(name) {
-      return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
-    }
-    function textToHtmlParagraphs(txt) {
+    // ====== Pomožne ======
+    function asciiFallback(name){ return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-'); }
+    function textToHtmlParagraphs(txt){
       const clean = txt.replace(/\r/g,'').trim();
       const parts = clean.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
-      return parts.length
-        ? '<p>' + parts.map(p => p.replace(/\n+/g,'<br>')).join('</p><p>') + '</p>'
-        : '<p>' + clean.replace(/\n+/g,'<br>') + '</p>';
+      return parts.length ? '<p>' + parts.map(p => p.replace(/\n+/g,'<br>')).join('</p><p>') + '</p>'
+                          : '<p>' + clean.replace(/\n+/g,'<br>') + '</p>';
     }
-    function parseFullOnly(raw) {
-      // če .txt vsebuje sekcije, vzemi del za "VSE"; sicer celoten tekst
+    function parseFullOnly(raw){
       const t = raw.replace(/\r/g,'');
-      const mFull = /(^|\n)\s*VSE\s*\n/i;
-      if (mFull) {
-        const idx = t.search(mFull);
-        if (idx !== -1) {
-          const full = t.slice(idx + t.match(mFull)[0].length).trim();
-          if (full) return textToHtmlParagraphs(full);
-        }
+      const m = /(^|\n)\s*VSE\s*\n/i;
+      const mRes = t.match(m);
+      if (mRes) {
+        const start = t.search(m) + mRes[0].length;
+        const full = t.slice(start).trim();
+        if (full) return textToHtmlParagraphs(full);
       }
       return textToHtmlParagraphs(t.trim());
     }
-    async function loadTextFile(path) {
-      // poskusi absolutno in relativno mapo + šumniki/fallback
+    async function loadTextFile(path){
       const bases = ['/assets/text/', 'assets/text/'];
       const tries = [];
       for (const base of bases) {
-        const p1 = base + encodeURIComponent(path);
-        const p2 = base + asciiFallback(path);
-        tries.push(p1, p2);
+        tries.push(base + encodeURIComponent(path), base + asciiFallback(path));
       }
       for (const url of tries) {
-        try {
-          const r = await fetch(url);
-          if (r.ok) return await r.text();
-        } catch(e) {}
+        try { const r = await fetch(url); if (r.ok) return await r.text(); } catch(e){}
       }
       throw new Error('Ni mogoče naložiti besedila iz: ' + tries.join(' | '));
     }
 
-    // ====== Robustno nalaganje slik (preizkusi več možnih imen/končnic) ======
-    function fileBaseCandidates(id, metaTitle, declaredName) {
+    // ====== Slike: robustno ======
+    function fileBaseCandidates(id, metaTitle, declaredName){
       const list = [];
-      if (declaredName) list.push(declaredName); // iz IMAGES
-      if (metaTitle) {
+      if (declaredName) list.push(declaredName);
+      if (metaTitle){
         const t = metaTitle.replace(/[^\p{L}\p{N}\s.-]/gu, '').trim();
-        list.push(`${t}.png`, `${t}.jpg`, `${t}.jpeg`, `${t}.webp`);
-        const tAscii = asciiFallback(t);
-        list.push(`${tAscii}.png`, `${tAscii}.jpg`, `${tAscii}.jpeg`, `${tAscii}.webp`);
+        list.push(`${t}.png`,`${t}.jpg`,`${t}.jpeg`,`${t}.webp`);
+        const ta = asciiFallback(t);
+        list.push(`${ta}.png`,`${ta}.jpg`,`${ta}.jpeg`,`${ta}.webp`);
       }
-      list.push(`${id}.png`, `${id}.jpg`, `${id}.jpeg`, `${id}.webp`);
-      const idAscii = asciiFallback(id);
-      list.push(`${idAscii}.png`, `${idAscii}.jpg`, `${idAscii}.jpeg`, `${idAscii}.webp`);
-      const extra = [];
-      for (const n of [...list]) {
-        if (n.includes(' ')) {
-          extra.push(n.replace(/\s+/g, '-'));
-          extra.push(n.replace(/\s+/g, '_'));
-        }
-      }
-      return Array.from(new Set([...list, ...extra]));
+      list.push(`${id}.png`,`${id}.jpg`,`${id}.jpeg`,`${id}.webp`);
+      const ia = asciiFallback(id);
+      list.push(`${ia}.png`,`${ia}.jpg`,`${ia}.jpeg`,`${ia}.webp`);
+      const extra=[];
+      for(const n of [...list]) if(n.includes(' ')){ extra.push(n.replace(/\s+/g,'-')); extra.push(n.replace(/\s+/g,'_')); }
+      return Array.from(new Set([...list,...extra]));
     }
-
-    function showImageFor(id, meta) {
+    function showImageFor(id, meta){
       const fig = document.getElementById('hero');
       const img = document.getElementById('heroImg');
       const cap = document.getElementById('heroCap');
 
       const declared = IMAGES[id];
       const candidates = fileBaseCandidates(id, meta?.title, declared);
-      const folders = ['/assets/img/art/', 'assets/img/art/']; // absolutno + relativno
+      const folders = ['/assets/img/art/', 'assets/img/art/'];
 
       const urls = [];
       for (const folder of folders) {
@@ -197,44 +177,31 @@
         }
       }
 
-      let tried = [];
-      let idx = 0;
-
-      function tryNext() {
-        if (idx >= urls.length) {
-          fig.classList.remove('d-none');
-          img.remove();
+      let tried = [], idx = 0;
+      function tryNext(){
+        if (idx >= urls.length){
+          fig.classList.remove('d-none'); img.remove();
           fig.innerHTML = `
             <div class="alert alert-warning text-start" role="alert">
               Slike ni mogoče naložiti. Preveri imena datotek v <code>/assets/img/art/</code>.<br>
-              <small>Poskusil sem:<br>${tried.map(u => `<code>${u}</code>`).join('<br>')}</small>
+              <small>Poskusil sem:<br>${tried.map(u=>`<code>${u}</code>`).join('<br>')}</small>
             </div>`;
-          console.warn('Image candidates tried:', tried);
-          return;
+          console.warn('Image candidates tried:', tried); return;
         }
-        const url = urls[idx++];
-        tried.push(url);
+        const url = urls[idx++]; tried.push(url);
         const probe = new Image();
-        probe.onload = () => {
-          img.src = url;
-          img.alt = meta?.title || id;
-          cap.textContent = meta ? `${meta.title} — ${meta.date}` : '';
-          fig.classList.remove('d-none');
-        };
-        probe.onerror = tryNext;
-        probe.src = url;
+        probe.onload = () => { img.src = url; img.alt = meta?.title || id; cap.textContent = meta ? `${meta.title} — ${meta.date}` : ''; fig.classList.remove('d-none'); };
+        probe.onerror = tryNext; probe.src = url;
       }
-
       tryNext();
     }
 
-    // ====== GLAVNI LOADER ======
+    // ====== Loader ======
     (async function(){
       const $ = (id) => document.getElementById(id);
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
 
-      // meta
       const meta = META[id];
       if (meta) {
         document.title = meta.title + ' – Imperializem';
@@ -244,15 +211,10 @@
         $('t').textContent = 'Neznana podstran';
       }
 
-      // slika (če obstaja) – robustno nalaganje
       showImageFor(id, meta);
 
-      // besedilo (samo CELOTEN OPIS)
       const filename = FILES[id];
-      if (!filename) {
-        $('full').innerHTML = '<p>Za ta ID ni povezane izvorne datoteke.</p>';
-        return;
-      }
+      if (!filename) { $('full').innerHTML = '<p>Za ta ID ni povezane izvorne datoteke.</p>'; return; }
 
       try {
         const raw = await loadTextFile(filename);
@@ -262,7 +224,7 @@
         const hint = location.protocol === 'file:'
           ? '<p><b>Namig:</b> Če stran odpreš z dvojnim klikom (<code>file://</code>), brskalnik blokira branje datotek. Zaženi mini strežnik, npr.: <code>python -m http.server</code>, nato odpri <code>http://localhost:8000/battle.html?id='+ (id||'') +'</code>.</p>'
           : '';
-        $('full').innerHTML  = '<p>Ni mogoče naložiti besedila.</p>' + hint;
+        $('full').innerHTML = '<p>Ni mogoče naložiti besedila.</p>' + hint;
       }
     })();
   </script>
