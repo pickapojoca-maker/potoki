@@ -7,19 +7,21 @@
     <meta name="author" content="" />
     <title>Imperializem</title>
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
-    <!-- Font Awesome icons (free version)-->
+    <!-- Font Awesome -->
     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
-    <!-- Google fonts-->
+    <!-- Google fonts -->
     <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
-    <!-- Core theme CSS (includes Bootstrap)-->
+    <!-- Core theme CSS -->
     <link href="css/styles.css" rel="stylesheet" />
-    <!-- Leaflet CSS (za karto) -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
     <style>
-      /* Višina in širina zemljevida */
-      #map { height: 500px; width: 100%; border-radius: 12px; }
+      /* --- Zemljevid: prvotna velikost --- */
+      #map { height: 500px; width: 100%; }
+
+      /* Legenda */
       .legend-box{
         background:#ffffff; padding:10px 12px; border-radius:8px;
         box-shadow:0 2px 10px rgba(0,0,0,.08);
@@ -28,29 +30,26 @@
       .legend-item{ display:flex; align-items:center; gap:8px; }
       .legend-dot{
         width:12px; height:12px; border-radius:50%;
-        background:#c92a2a;           /* enaka barva kot markerji */
-        border:1px solid #7c1d1d; display:inline-block;
+        background:#c92a2a; border:1px solid #7c1d1d; display:inline-block;
       }
       .leaflet-tooltip { font-size: 12px; padding: 4px 6px; }
 
-      /* Audio kontroli v navbarju (pusti, če jih uporabljaš) */
+      /* Audio kontrole v navbarju (če jih obdržiš) */
       .navbar-audio .form-range { padding: 0; margin: 0; }
       .navbar-audio .btn { line-height: 1; }
 
-      /* --- SLOVAR POJMOV (levo od mape) --- */
+      /* Slovar pod mapo */
       .term-card {
         background:#fffdf6; color:#222;
-        border:1px solid #e7dcc7; border-radius:12px; padding:16px;
-        box-shadow:0 8px 24px rgba(0,0,0,.12);
+        border:1px solid #e7dcc7; border-radius:12px; padding:14px;
+        box-shadow:0 8px 24px rgba(0,0,0,.08);
+        height:100%;
       }
-      .term-card h5 { margin:0 0 .25rem; font-weight:700; }
-      .term-card .badge { background:#2b3035; color:#ced4da; }
-      .download-sources { width:100%; }
+      .term-card h5 { margin:0 0 .25rem; font-weight:700; font-size:1.05rem; }
+      .term-card p  { margin-bottom:.25rem; font-size:.95rem; }
 
-      /* --- Odstrani dekorativne črte, ki lahko prekrivajo slike v “project” sekciji --- */
-      .project::before,
-      .project::after,
-      .project .project-text::before {
+      /* Odstrani dekorativne črte prek slik v “project” sekciji */
+      .project::before, .project::after, .project .project-text::before {
         content:none !important; display:none !important;
         background:none !important; border:none !important;
       }
@@ -68,7 +67,6 @@
           <i class="fas fa-bars"></i>
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
-          <!-- (Audio kontrole ostanejo, če jih želiš) -->
           <li class="nav-item d-flex align-items-center gap-2 navbar-audio ms-lg-3 mt-2 mt-lg-0">
             <button id="audioToggle" class="btn btn-sm btn-outline-primary" type="button" aria-label="Predvajaj/ustavi" title="Predvajaj/ustavi">
               <i class="fas fa-play"></i>
@@ -78,7 +76,6 @@
             </button>
             <input id="audioVol" class="form-range d-none d-md-block" type="range" min="0" max="1" step="0.01" value="0.5" style="width:130px;">
           </li>
-
           <ul class="navbar-nav ms-auto">
             <li class="nav-item"><a class="nav-link" href="#about">Zemljevid</a></li>
             <li class="nav-item"><a class="nav-link" href="#projects">About</a></li>
@@ -101,7 +98,7 @@
       </div>
     </header>
 
-    <!-- About (Zemljevid + Slovar + Viri) -->
+    <!-- About (Zemljevid + legenda + SLOVAR + VIRI) -->
     <section class="about-section text-center" id="about">
       <div class="container px-4 px-lg-5">
         <div class="row gx-4 gx-lg-5 justify-content-center">
@@ -111,82 +108,77 @@
           </div>
         </div>
 
-        <!-- NOVA DVOSTOLPČNA POSTAVITEV: LEVO SLOVAR + VIRi, DESNO MAPA -->
-        <div class="row g-3 align-items-start text-start">
-          <!-- LEFT: Slovar + Viri -->
-          <div class="col-lg-4">
+        <!-- Zemljevid -->
+        <div id="map" aria-label="Zemljevid bitk imperializma"></div>
+
+        <!-- Legenda + Reset -->
+        <div class="legend-box d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mt-2">
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="legend-item">
+              <span class="legend-dot"></span>
+              Ključni dogodki: bitke, obleganja, krize (1850–1914)
+            </div>
+          </div>
+          <button id="resetView" class="btn btn-sm btn-outline-primary">PRIKAŽI VSE BITKE</button>
+        </div>
+
+        <!-- SLOVAR pojmov (kratke razlage) -->
+        <div class="row g-3 text-start mt-3">
+          <div class="col-md-6 col-lg-4">
             <div class="term-card">
-              <h4 class="mb-3">Slovar pojmov</h4>
-
-              <div class="mb-3">
-                <h5>IMPERIALIZEM</h5>
-                <span class="badge mb-1">politika & obdobje</span>
-                <p class="mb-2">Politika širjenja gospodarske, politične in vojaške moči velikih sil nad čezmorskimi območji; v 19. stoletju tekmovanje za kolonije, spodbujeno z industrijsko revolucijo, nacionalizmom in strateško rivalstvom.</p>
-              </div>
-
-              <div class="mb-3">
-                <h5>KOLONIJA</h5>
-                <span class="badge mb-1">status ozemlja</span>
-                <p class="mb-2">Ozemlje pod neposredno oblastjo metropole; uprava, zunanja politika in gospodarstvo vodi matična država. prebivalci navadno nimajo polnih političnih pravic.</p>
-              </div>
-
-              <div class="mb-3">
-                <h5>PROTEKTORAT</h5>
-                <span class="badge mb-1">status ozemlja</span>
-                <p class="mb-2">Ozemlje z omejeno notranjo samoupravo, medtem ko metropola nadzoruje zunanjo politiko in obrambo. Formalna suverenost obstaja, a je močno omejena.</p>
-              </div>
-
-              <div class="mb-3">
-                <h5>DOMINION</h5>
-                <span class="badge mb-1">britanski kontekst</span>
-                <p class="mb-2">Samoupravna posest z lastnim parlamentom in vlado, ki priznava britanskega monarha (npr. Kanada, Avstralija); korak proti polni neodvisnosti v 20. stoletju.</p>
-              </div>
-
-              <div class="mb-3">
-                <h5>ANEKSIJA</h5>
-                <span class="badge mb-1">pravni pojem</span>
-                <p class="mb-2">Priključitev ozemlja drugi državi (pripojitev), navadno po ultimatu, sporazumu ali okupaciji. Primer: aneksija Bosne in Hercegovine (1908).</p>
-              </div>
-
-              <div class="mb-3">
-                <h5>KRIZA</h5>
-                <span class="badge mb-1">mednarodni odnosi</span>
-                <p class="mb-2">Akutno zaostrenje odnosov med državami z nevarnostjo vojne (npr. maroški krizi 1905, 1911; bosanska kriza 1908), razrešeno z diplomacijo ali orožjem.</p>
-              </div>
-
-              <div class="mb-3">
-                <h5>ANTANTA</h5>
-                <span class="badge mb-1">zavezništvo</span>
-                <p class="mb-2">Dogovori med Združenim kraljestvom, Francijo in Rusijo (1904–1907), protiutež Trojni zvezi; jedro zaveznikov v I. svetovni vojni.</p>
-              </div>
-
-              <div class="mb-2">
-                <h5>TROJNA ZVEZA</h5>
-                <span class="badge mb-1">zavezništvo</span>
-                <p class="mb-0">Zavezništvo Nemčije, Avstro-Ogrske in Italije (1882). Italija 1915 prestopi k antanti; zavezništvo oblikuje evropsko ravnotežje pred I. svetovno vojno.</p>
-              </div>
-            </div>
-
-            <!-- Gumb VIRI – takoj pod slovarjem -->
-            <a class="btn btn-sm btn-outline-secondary mt-2 download-sources" href="assets/viri.docx" download>
-              <i class="fa fa-download me-1"></i> Viri (prenos)
-            </a>
-          </div>
-
-          <!-- RIGHT: Map + legenda + reset -->
-          <div class="col-lg-8">
-            <div id="map" aria-label="Zemljevid bitk imperializma"></div>
-
-            <div class="legend-box d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mt-2">
-              <div class="d-flex align-items-center gap-3 flex-wrap">
-                <div class="legend-item">
-                  <span class="legend-dot"></span>
-                  Ključni dogodki: bitke, obleganja, krize (1850–1914)
-                </div>
-              </div>
-              <button id="resetView" class="btn btn-sm btn-outline-primary">PRIKAŽI VSE BITKE</button>
+              <h5>IMPERIALIZEM</h5>
+              <p>Politika širitve moči nad čezmorskimi območji; v 19. stol. tekmovanje velikih sil za kolonije.</p>
             </div>
           </div>
+          <div class="col-md-6 col-lg-4">
+            <div class="term-card">
+              <h5>KOLONIJA</h5>
+              <p>Ozemlje pod neposredno oblastjo metropole; cilj je upravljanje virov in trga.</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <div class="term-card">
+              <h5>PROTEKTORAT</h5>
+              <p>Ozemlje z notranjo samoupravo, metropola vodi zunanjo politiko in obrambo.</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <div class="term-card">
+              <h5>DOMINION</h5>
+              <p>Britanska samoupravna posest z lastno vlado, ki priznava monarha (npr. Kanada).</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <div class="term-card">
+              <h5>ANEKSIJA</h5>
+              <p>Pripojitev ozemlja drugi državi (npr. Bosna in Hercegovina 1908).</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <div class="term-card">
+              <h5>KRIZA</h5>
+              <p>Akutno zaostrenje odnosov z nevarnostjo vojne (npr. maroški krizi, bosanska kriza).</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <div class="term-card">
+              <h5>ANTANTA</h5>
+              <p>Britanija–Francija–Rusija (1904–1907); protiutež Trojni zvezi.</p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <div class="term-card">
+              <h5>TROJNA ZVEZA</h5>
+              <p>Zavezništvo Nemčije, Avstro-Ogrske in Italije (1882); Italija 1915 prestopi.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIRI (pod zemljevidom, pod slovarjem) -->
+        <div class="text-start mt-2">
+          <a class="btn btn-sm btn-outline-secondary" href="assets/viri.docx" download>
+            <i class="fa fa-download me-1"></i> Viri (prenos)
+          </a>
         </div>
       </div>
     </section>
@@ -268,7 +260,7 @@
           </div>
         </div>
 
-        <!-- Project Five (popravljena slika brez “črt”) -->
+        <!-- Project Five (popravljena slika) -->
         <div class="row gx-0 mb-5 mb-lg-0 justify-content-center">
           <div class="col-lg-6"><img class="img-fluid" src="assets/img/azb1.png" alt="..." /></div>
           <div class="col-lg-6">
@@ -283,7 +275,7 @@
           </div>
         </div>
 
-        <!-- Zadnja slika (odstranjene črte prek slike z zgornjim CSS) -->
+        <!-- Zadnja slika (črte odstranili z CSS zgoraj) -->
         <div class="row gx-0 justify-content-center">
           <div class="col-lg-6"><img class="img-fluid" src="assets/img/potoki2.jpg" alt="..." /></div>
           <div class="col-lg-6 order-lg-first">
@@ -348,7 +340,6 @@
             </div>
           </div>
         </div>
-
         <div class="social d-flex justify-content-center">
           <a class="mx-2" href="https://youtube.com/watch?v=vOWEMKjkAh0"><i class="fab fa-youtube"></i></a>
           <a class="mx-2" href="https://www.youtube.com/watch?v=5DhBXCVUdmw&list=LL&index=16"><i class="fab fa-facebook-f"></i></a>
@@ -357,16 +348,16 @@
       </div>
     </section>
 
-    <!-- Footer (gumb za “Viri” smo prestavili k slovarju) -->
+    <!-- Footer -->
     <footer class="footer bg-black small text-center text-white-50">
-      <div class="container px-4 px-lg-5">Copyright &copy; Viri so na vrhu (levo ob zemljevidu)</div>
+      <div class="container px-4 px-lg-5">Copyright &copy; Viri so pod zemljevidom</div>
     </footer>
 
-    <!-- Bootstrap core JS-->
+    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Core theme JS-->
+    <!-- Core theme JS -->
     <script src="js/scripts.js"></script>
-    <!-- Leaflet JS (samo enkrat) -->
+    <!-- Leaflet (enkrat) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
@@ -379,16 +370,9 @@
         }).addTo(map);
 
         // Marker stil
-        const style = {
-          radius: 8,
-          fillColor: '#c92a2a',
-          color: '#7c1d1d',
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.92
-        };
+        const style = { radius: 8, fillColor: '#c92a2a', color: '#7c1d1d', weight: 1, opacity: 1, fillOpacity: 0.92 };
 
-        // === 13 DOGODKOV Z .TXT DATOTEKAMI ===
+        // 13 dogodkov (.txt)
         const battles = {
           "type": "FeatureCollection",
           "features": [
@@ -397,7 +381,7 @@
             {"type":"Feature","properties":{"id":"obleganje-pariza","title":"Obleganje Pariza","date":"1870–1871","place":"Pariz, Francija","short":"Lakota in neuspešni izpadi prisilijo mesto k vdaji.","link":"battle.html?id=obleganje-pariza"},"geometry":{"type":"Point","coordinates":[2.3522,48.8566]}},
             {"type":"Feature","properties":{"id":"rusko-japonska-vojna","title":"Rusko-japonska vojna","date":"1904–1905","place":"Port Arthur / Mandžurija","short":"Japonska zmaga pri Port Arturju, Mukdnu in Tsushimi.","link":"battle.html?id=rusko-japonska-vojna"},"geometry":{"type":"Point","coordinates":[121.24,38.81]}},
             {"type":"Feature","properties":{"id":"boksarska-vstaja","title":"Boksarska vstaja – Peking","date":"1899–1901","place":"Peking, Kitajska","short":"Obleganje diplomatske četrti; koalicija razbije upor.","link":"battle.html?id=boksarska-vstaja"},"geometry":{"type":"Point","coordinates":[116.4074,39.9042]}},
-            {"type":"Feature","properties":{"id":"burska-vojna","title":"Burska vojna","date":"1899–1902","place":"Pretoria (simbolno), JAR","short":"Od obleganj do gverile; Britanci zlomijo burski odpor.","link":"battle.html?id=bur ska-vojna"},"geometry":{"type":"Point","coordinates":[28.188,-25.746]}},
+            {"type":"Feature","properties":{"id":"burska-vojna","title":"Burska vojna","date":"1899–1902","place":"Pretoria (simbolno), JAR","short":"Od obleganj do gverile; Britanci zlomijo burski odpor.","link":"battle.html?id=burska-vojna"},"geometry":{"type":"Point","coordinates":[28.188,-25.746]}},
             {"type":"Feature","properties":{"id":"druga-maroska-kriza","title":"Druga maroška kriza (Agadir)","date":"1911","place":"Agadir, Maroko","short":"»Panterjev skok« poglobi napetosti; antanta se utrdi.","link":"battle.html?id=druga-maroska-kriza"},"geometry":{"type":"Point","coordinates":[-9.5981,30.4202]}},
             {"type":"Feature","properties":{"id":"amerisko-spanska-vojna","title":"Ameriško-španska vojna","date":"1898","place":"Havana, Kuba (simbolno)","short":"Poraza pri Manili in Santiagu razbijeta špansko moč.","link":"battle.html?id=amerisko-spanska-vojna"},"geometry":{"type":"Point","coordinates":[-82.3666,23.1136]}},
             {"type":"Feature","properties":{"id":"balkanski-vojni","title":"Prva in druga balkanska vojna","date":"1912–1913","place":"Skopje (simbolno), Makedonija","short":"Zlom osmanske oblasti v Evropi; spori za Makedonijo.","link":"battle.html?id=balkanski-vojni"},"geometry":{"type":"Point","coordinates":[21.43,41.997]}},
@@ -447,10 +431,10 @@
       });
     </script>
 
-    <!-- * * SB Forms JS * *-->
+    <!-- SB Forms -->
     <script src="https://cdn.startbootstrap.com/sb-forms-latest.js"></script>
 
-    <!-- (Če uporabljaš glasbo, pusti spodaj — sicer lahko odstraniš) -->
+    <!-- AUDIO (če ga želiš obdržati) -->
     <audio id="bgm" preload="auto" loop>
       <source src="assets/audio/MIKIČ - NAJJAČI SI (Official Video).mp3" type="audio/mpeg">
       <source src="assets/audio/MIKIČ - NAJJAČI SI (Official Video).ogg" type="audio/ogg">
@@ -464,27 +448,16 @@
 
       function setPlayUI(isPlaying) {
         if (!toggleBtn) return;
-        if (isPlaying) {
-          toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-          toggleBtn.classList.remove('btn-outline-primary');
-          toggleBtn.classList.add('btn-primary');
-        } else {
-          toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-          toggleBtn.classList.add('btn-outline-primary');
-          toggleBtn.classList.remove('btn-primary');
-        }
+        if (isPlaying) { toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; toggleBtn.classList.remove('btn-outline-primary'); toggleBtn.classList.add('btn-primary'); }
+        else { toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; toggleBtn.classList.add('btn-outline-primary'); toggleBtn.classList.remove('btn-primary'); }
       }
 
       if (!bgm || !toggleBtn || !restartBtn || !vol) return;
-
-      vol.value = '0.1';
-      bgm.volume = 0.1;
+      vol.value = '0.1'; bgm.volume = 0.1;
 
       toggleBtn.addEventListener('click', async () => {
-        try {
-          if (bgm.paused) { await bgm.play(); setPlayUI(true); }
-          else { bgm.pause(); setPlayUI(false); }
-        } catch (e) { console.warn('Predvajanje blokirano ali napaka:', e); }
+        try { if (bgm.paused) { await bgm.play(); setPlayUI(true); } else { bgm.pause(); setPlayUI(false); } }
+        catch (e) { console.warn('Predvajanje blokirano ali napaka:', e); }
       });
 
       restartBtn.addEventListener('click', async () => {
